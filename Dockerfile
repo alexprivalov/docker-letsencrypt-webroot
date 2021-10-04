@@ -1,3 +1,4 @@
+#docker build -t alexprivalov/letsencrypt-webroot:v2.0.0 .
 FROM certbot/certbot:v1.3.0
 MAINTAINER vdhpieter <vdhpieter@outlook.com>
 

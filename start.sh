@@ -17,12 +17,13 @@ fi
 
 if [[ $STAGING -eq 1 ]]; then
   echo "Using the staging environment"
-  ADDITIONAL="--staging"
+  ADDITIONAL="--test-cert"
 fi
 
 DARRAYS=(${DOMAINS})
 EMAIL_ADDRESS=${EMAIL}
 LE_DOMAINS=("${DARRAYS[*]/#/-d }")
+LE_CERT_DIR="/etc/letsencrypt"
 
 exp_limit="${EXP_LIMIT:-30}"
 check_freq="${CHECK_FREQ:-30}"
@@ -57,19 +58,20 @@ le_hook() {
 
 le_fixpermissions() {
     echo "[INFO] Fixing permissions"
-        chown -R ${CHOWN:-root:root} /etc/letsencrypt
-        find /etc/letsencrypt -type d -exec chmod 755 {} \;
-        find /etc/letsencrypt -type f -exec chmod ${CHMOD:-644} {} \;
+        chown -R ${CHOWN:-root:root} "${LE_CERT_DIR}"
+        find "${LE_CERT_DIR}" -type d -exec chmod 755 {} \;
+        find "${LE_CERT_DIR}" -type f -exec chmod ${CHMOD:-644} {} \;
 }
 
 le_renew() {
-    certbot certonly --webroot --agree-tos --renew-by-default --text ${ADDITIONAL} --email ${EMAIL_ADDRESS} -w ${WEBROOT_PATH} ${LE_DOMAINS}
+    certbot certonly --webroot --agree-tos --renew-by-default --text ${ADDITIONAL} --email ${EMAIL_ADDRESS} -w ${WEBROOT_PATH} ${LE_DOMAINS} --logs-"${LE_CERT_DIR}" --work-dir "${LE_CERT_DIR}" --config-dir "${LE_CERT_DIR}"
     le_fixpermissions
     le_hook
 }
 
 le_check() {
-    cert_file="/etc/letsencrypt/live/$DARRAYS/fullchain.pem"
+    le_fixpermissions
+    cert_file="${LE_CERT_DIR}/live/$DARRAYS/fullchain.pem"
 
     if [[ -e $cert_file ]]; then
 
@@ -109,7 +111,9 @@ le_check() {
       echo "[INFO] certificate file not found for domain $DARRAYS. Starting webroot initial certificate request script..."
       if [[ $CHICKENEGG -eq 1 ]]; then
         echo "Making a temporary self signed certificate to prevent chicken and egg problems"
-        openssl req -x509 -newkey rsa:4096 -sha256 -nodes -keyout "/etc/letsencrypt/live/$DARRAYS/privkey.pem" -out "${cert_file}" -subj "/CN=example.com" -days 1
+        mkdir -p ${LE_CERT_DIR}/live/$DARRAYS || true
+        openssl req -x509 -newkey rsa:4096 -sha256 -nodes -keyout "${LE_CERT_DIR}/live/$DARRAYS/privkey.pem" -out "${cert_file}" -subj "/CN=example.com" -days 1
+        le_fixpermissions
       fi
       le_renew
       echo "Certificate request process finished for domain $DARRAYS"
