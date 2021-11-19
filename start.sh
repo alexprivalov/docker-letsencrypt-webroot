@@ -64,7 +64,7 @@ le_fixpermissions() {
 }
 
 le_renew() {
-    certbot certonly --webroot --agree-tos --renew-by-default --text ${ADDITIONAL} --email ${EMAIL_ADDRESS} -w ${WEBROOT_PATH} ${LE_DOMAINS} --logs-"${LE_CERT_DIR}" --work-dir "${LE_CERT_DIR}" --config-dir "${LE_CERT_DIR}"
+    certbot certonly --webroot --agree-tos --renew-by-default --text ${ADDITIONAL} --email ${EMAIL_ADDRESS} -w ${WEBROOT_PATH} ${LE_DOMAINS} --logs "${LE_CERT_DIR}" --work-dir "${LE_CERT_DIR}" --config-dir "${LE_CERT_DIR}"
     le_fixpermissions
     le_hook
 }
